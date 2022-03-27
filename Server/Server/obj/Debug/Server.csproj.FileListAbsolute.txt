@@ -4,3 +4,6 @@
 /Users/alex/Documents/PRO/Tests/client-server-sync/Server/Server/obj/Debug/Server.csproj.CoreCompileInputs.cache
 /Users/alex/Documents/PRO/Tests/client-server-sync/Server/Server/obj/Debug/Server.exe
 /Users/alex/Documents/PRO/Tests/client-server-sync/Server/Server/obj/Debug/Server.pdb
+/Users/alex/Documents/PRO/Tests/client-server-sync/Server/Server/bin/Debug/PackageTypes.dll
+/Users/alex/Documents/PRO/Tests/client-server-sync/Server/Server/bin/Debug/PackageTypes.pdb
+/Users/alex/Documents/PRO/Tests/client-server-sync/Server/Server/obj/Debug/Server.csproj.CopyComplete

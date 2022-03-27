@@ -1,10 +1,6 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.Remoting.Messaging;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Server
 {
@@ -21,16 +17,19 @@ namespace Server
                 Console.WriteLine("Waiting for a connexion...");
                 Console.WriteLine("Press any key to close the server...");
 
-                socket.BeginReceive(new AsyncCallback(ServerConnection.ReadUdpCallback), socket);
+                socket.BeginReceive(ReadUdpCallback, socket);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
-
-            Console.ReadKey();
         }
 
+        private static void SendUdpCallback(IAsyncResult result)
+        {
+            
+        }
+        
         private static void ReadUdpCallback(IAsyncResult result)
         {
             var socket = (UdpClient) result.AsyncState;
@@ -39,7 +38,9 @@ namespace Server
 
             Console.WriteLine("Got {0} from {1}", message.Length.ToString(), source);
 
-            socket.BeginReceive(new AsyncCallback(ServerConnection.ReadUdpCallback), socket);
+            PackageHandler.ParsePackage(message);
+            
+            socket.BeginReceive(ReadUdpCallback, socket);
         }
     }
 }

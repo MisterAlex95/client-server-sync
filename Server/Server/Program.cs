@@ -6,8 +6,9 @@ namespace Server
     {
         public static void Main(string[] args)
         {
-            var server = new ServerConnection();
+            IServer server = new ServerConnection();
             server.StartListener();
+            Console.ReadKey();
         }
     }
 }

@@ -1,0 +1,6 @@
+/Users/alex/Documents/PRO/Tests/client-server-sync/PackageTypes/PackageTypes/bin/Debug/PackageTypes.dll
+/Users/alex/Documents/PRO/Tests/client-server-sync/PackageTypes/PackageTypes/bin/Debug/PackageTypes.pdb
+/Users/alex/Documents/PRO/Tests/client-server-sync/PackageTypes/PackageTypes/obj/Debug/PackageTypes.csprojAssemblyReference.cache
+/Users/alex/Documents/PRO/Tests/client-server-sync/PackageTypes/PackageTypes/obj/Debug/PackageTypes.csproj.CoreCompileInputs.cache
+/Users/alex/Documents/PRO/Tests/client-server-sync/PackageTypes/PackageTypes/obj/Debug/PackageTypes.dll
+/Users/alex/Documents/PRO/Tests/client-server-sync/PackageTypes/PackageTypes/obj/Debug/PackageTypes.pdb
