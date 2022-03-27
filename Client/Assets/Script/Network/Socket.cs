@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -9,15 +8,12 @@ using UnityEngine;
 using PackageTypes;
 using PackageTypes.Packages;
 using Server.HandleMessages;
-using UnityEngine.UI;
 
 namespace Network
 {
+    [RequireComponent(typeof(JobManager))]
     public class Socket : MonoBehaviour
     {
-        // UI
-        [SerializeField] private Text Ping;
-
         // Network
         public string hostIp;
         public int hostPort;
@@ -26,13 +22,20 @@ namespace Network
         private IPAddress _serverIp;
         private IPEndPoint _hostEndPoint;
 
-        private float _latency = -1;
-        private bool _toUpdate = false;
+        // Action linked to packages
+        public static event Action<float> OnReceivedPing;
+        private JobManager _jobManager;
+        private object asyncLock = new object();
 
         void Start()
         {
             // To keep it over scenes
             DontDestroyOnLoad(gameObject);
+
+            lock (asyncLock)
+            {
+                _jobManager = GetComponent<JobManager>();
+            }
 
             _serverIp = IPAddress.Parse(hostIp);
             _hostEndPoint = new IPEndPoint(_serverIp, hostPort);
@@ -42,15 +45,12 @@ namespace Network
             _client.Client.Blocking = false;
 
             _client.BeginReceive(new AsyncCallback(ProcessDgram), _client);
-            StartCoroutine(LatencyCoroutine());
         }
 
         public void CalculateLatency()
         {
             // To calculate the latency
             var message = new PingMessage("ping");
-            this._latency = DateTime.Now.Millisecond;
-            this._toUpdate = true;
             SendDgram(message, PackageTypes.PackageTypes.PingMessage);
         }
 
@@ -99,8 +99,13 @@ namespace Network
                         case PackageTypes.PackageTypes.PingAnswer:
                             var ping = buffer.DeserializeFromBytes<PackageTypes.Packages.PingAnswer>();
                             var pingHandler = new HandlePingMessage(ping);
-                            this._latency -= pingHandler.Execute();
-                            this._toUpdate = false;
+                            var value = pingHandler.Execute();
+
+                            lock (asyncLock)
+                            {
+                                _jobManager.AddAction(() => OnReceivedPing?.Invoke(value));
+                            }
+
                             break;
 
                         case PackageTypes.PackageTypes.ActionAnswer:
@@ -112,23 +117,6 @@ namespace Network
                             throw new ArgumentOutOfRangeException();
                     }
                 }
-            }
-        }
-
-        private IEnumerator LatencyCoroutine()
-        {
-            for (; ; )
-            {
-                // yield return new WaitForSeconds(1f);
-                CalculateLatency();
-            }
-        }
-        
-        private void Update()
-        {
-            if (_toUpdate)
-            {
-                Ping.text = _latency.ToString();
             }
         }
     }
