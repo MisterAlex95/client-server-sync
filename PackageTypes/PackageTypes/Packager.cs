@@ -1,48 +1,106 @@
 using System;
 using System.IO;
-using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 
 namespace PackageTypes
 {
     public static class Packager
     {
-        /// Convert an object to a byte array
-        public static byte[] SerializeToBytes(this object source)
+        // Method for basic checksum
+        private static byte GetBasicChecksum(this byte[] data)
         {
-            try
+            byte sum = 0;
+            unchecked // Let overflow occur without exceptions
+            {
+                foreach (byte b in data)
+                {
+                    sum += b;
+                }
+            }
+
+            return sum;
+        }
+
+        // Serialize to bytes (BinaryFormatter)
+        public static byte[] SerializeToBytes<T>(this T source)
+        {
+            using (var stream = new MemoryStream())
             {
                 var formatter = new BinaryFormatter();
-                var stream = new MemoryStream();
                 formatter.Serialize(stream, source);
-
                 return stream.ToArray();
-            }
-            catch (SerializationException e)
-            {
-                Console.WriteLine("Failed to serialize. Reason: " + e.Message);
-                throw;
             }
         }
 
-        // Convert a byte array to an Object
+        // Deerialize from bytes (BinaryFormatter)
         public static T DeserializeFromBytes<T>(this byte[] source)
         {
-            try
+            using (var stream = new MemoryStream(source))
             {
-                MemoryStream stream = new MemoryStream(source);
-                BinaryFormatter formatter = new BinaryFormatter();
-                object obj = formatter.Deserialize(stream);
-                stream.Flush();
-                stream.Close();
-                stream.Dispose();
-                return (T) obj;
+                var formatter = new BinaryFormatter();
+                stream.Seek(0, SeekOrigin.Begin);
+                return (T) formatter.Deserialize(stream);
             }
-            catch (SerializationException e)
+        }
+
+        // Check if we have enough data
+        // will throw if it detects a corruption (basic)
+        // return false if there isnt enough data to determine
+        // return true and length of the package if sucessfull
+        public static bool HasValidPackage(this Stream stream, out Int32 messageSize)
+        {
+            messageSize = -1;
+
+            if (stream.Length - stream.Position < sizeof(byte) * 2 + sizeof(Int32))
+                return false;
+
+
+            var stx = stream.ReadByte();
+
+            if (stx != 2)
+                throw new InvalidDataException("Invalid Package : STX Failed");
+
+            var packageLength = new byte[sizeof(Int32)];
+            stream.Read(packageLength, 0, sizeof(Int32));
+            messageSize = BitConverter.ToInt32(packageLength, 0) - sizeof(byte) * 3;
+            var checkSum = stream.ReadByte();
+
+            if (checkSum != packageLength.GetBasicChecksum())
+                throw new InvalidDataException("Invalid Package : CheckSum Failed");
+
+            return stream.Length >= messageSize;
+        }
+
+        // Pack the message
+        public static byte[] PackMessage<T>(this T source, PackageTypes messageType)
+        {
+            var buffer = source.SerializeToBytes();
+            var packageLength = BitConverter.GetBytes(buffer.Length + sizeof(byte) * 3);
+            using (var stream = new MemoryStream())
             {
-                Console.WriteLine("Failed to deserialize. Reason: " + e.Message);
-                throw;
+                stream.WriteByte(2);
+                stream.Write(packageLength, 0, sizeof(Int32));
+                stream.WriteByte(packageLength.GetBasicChecksum());
+                stream.WriteByte((byte) messageType);
+                stream.Write(buffer, 0, buffer.Length);
+                stream.WriteByte(3);
+                return stream.ToArray();
             }
+        }
+
+        // Unpack the message
+        public static PackageTypes UnPackMessage(this Stream stream, Int32 messageSize, out byte[] buffer)
+        {
+            var messageType = (PackageTypes) stream.ReadByte();
+            buffer = new byte[messageSize];
+            stream.Read(buffer, 0, buffer.Length);
+
+            var etx = stream.ReadByte();
+
+            if (etx != 3)
+                throw new InvalidDataException("Invalid Package : ETX Failed");
+
+            return messageType;
         }
     }
 }

@@ -3,13 +3,15 @@ using System;
 namespace PackageTypes.Packages
 {
     [Serializable]
-    public class HandCheck
+    public class HandCheck: IPackage
     {
-        public string Data { get; set; }
+        public long Timestamp { get; set; }
 
-        public HandCheck(string data)
+        public HandCheck(long timestamp)
         {
-            Data = data;
+            Timestamp = timestamp;
         }
+
+        public PackageTypes GetPackageType() => PackageTypes.HandCheckMessage;
     }
 }

@@ -2,7 +2,11 @@ namespace PackageTypes
 {
     public enum PackageTypes: byte
     {
-        HandCheck,
-        Ping
+        HandCheckMessage,
+        HandCheckAnswer,
+        PingMessage,
+        PingAnswer,
+        ActionMessage,
+        ActionAnswer
     }
 }
