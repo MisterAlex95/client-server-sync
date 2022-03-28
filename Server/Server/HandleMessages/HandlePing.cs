@@ -20,14 +20,18 @@ namespace Server.HandleMessages
             var answer = new PingAnswer("pong");
             var data = answer.PackMessage<PingAnswer>(PackageTypes.PackageTypes.PingAnswer);
             Console.WriteLine($"Try to send a message to {0}:{1}", client.Hostname, client.Port.ToString());
-            socket.Send (data, data.Length, client.Hostname, client.Port);
+            socket.Send(data, data.Length, client.Hostname, client.Port);
         }
 
         public void ExecuteAll(UdpClient socket, Dictionary<string, Connection> clients)
         {
             var answer = new PingAnswer("pong");
             var data = answer.PackMessage<PingAnswer>(PackageTypes.PackageTypes.PingAnswer);
-            socket.Send(data, data.Length);
+
+            foreach (var client in clients)
+            {
+                socket.Send(data, data.Length, client.Value.Hostname, client.Value.Port);
+            }
         }
     }
 }

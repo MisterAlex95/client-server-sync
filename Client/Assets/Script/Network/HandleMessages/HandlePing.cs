@@ -9,17 +9,17 @@ namespace Server.HandleMessages
 {
     public class HandlePingMessage
     {
-        private PingAnswer Message;
+        private PingAnswer _message;
         
         public HandlePingMessage(PingAnswer data)
         {
-            Message = data;
+            _message = data;
             Debug.Log(data.Data);
         }
 
-        public float Execute()
+        public long Execute()
         {
-            return DateTime.Now.Millisecond;
+            return new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
         }
     }
 }

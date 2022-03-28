@@ -15,7 +15,8 @@ namespace Script.UI
         [SerializeField] private Text Ping;
 
         // Internal data
-        private float _timestamp;
+        private long _timestamp;
+        public long Latency { get; private set; }
 
         private void Start()
         {
@@ -36,16 +37,19 @@ namespace Script.UI
                 yield return new WaitForSeconds(1f);
 
                 // Reset timestamp
-                this._timestamp = DateTime.Now.Millisecond;
+                this._timestamp = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+                Debug.Log($"Send ping at {this._timestamp}");
                 socket.CalculateLatency();
             }
         }
 
-        private void SocketOnReceivedPing(float timestamp)
+        private void SocketOnReceivedPing(long newTimestamp)
         {
             // Calculate the difference between the send and the receive
-            this._timestamp = timestamp - this._timestamp;
-            Ping.text = this._timestamp.ToString();
+            this.Latency = newTimestamp - this._timestamp;
+            Debug.Log($"Receive ping at {newTimestamp}");
+            Debug.Log($"Latency at {this.Latency}");
+            Ping.text = this.Latency.ToString();
         }
     }
 }

@@ -29,7 +29,7 @@ namespace Server
                     switch (stream.UnPackMessage(messageSize, out buffer))
                     {
                         case PackageTypes.PackageTypes.HandCheckMessage:
-                            var handCheck = buffer.DeserializeFromBytes<PackageTypes.Packages.HandCheck>();
+                            var handCheck = buffer.DeserializeFromBytes<PackageTypes.Packages.HandCheckMessage>();
                             Console.WriteLine(handCheck.Timestamp);
                             break;
 
@@ -40,8 +40,9 @@ namespace Server
                             break;
 
                         case PackageTypes.PackageTypes.ActionMessage:
-                            var action = buffer.DeserializeFromBytes<PackageTypes.Packages.Action>();
-                            Console.WriteLine(action.Timestamp);
+                            var action = buffer.DeserializeFromBytes<PackageTypes.Packages.ActionMessage>();
+                            var actionHandler = new HandleAction(action);
+                            actionHandler.ExecuteAll(socket, clients);
                             break;
 
                         default:

@@ -23,7 +23,8 @@ namespace Network
         private IPEndPoint _hostEndPoint;
 
         // Action linked to packages
-        public static event Action<float> OnReceivedPing;
+        public static event Action<long> OnReceivedPing;
+        public static event Action<long> OnReceivedAction;
         private JobManager _jobManager;
         private object asyncLock = new object();
 
@@ -45,13 +46,6 @@ namespace Network
             _client.Client.Blocking = false;
 
             _client.BeginReceive(new AsyncCallback(ProcessDgram), _client);
-        }
-
-        public void CalculateLatency()
-        {
-            // To calculate the latency
-            var message = new PingMessage("ping");
-            SendDgram(message, PackageTypes.PackageTypes.PingMessage);
         }
 
         private void SendDgram(IPackage package, PackageTypes.PackageTypes type)
@@ -92,25 +86,32 @@ namespace Network
                     switch (stream.UnPackMessage(messageSize, out buffer))
                     {
                         case PackageTypes.PackageTypes.HandCheckAnswer:
-                            var handCheck = buffer.DeserializeFromBytes<PackageTypes.Packages.HandCheck>();
+                            var handCheck = buffer.DeserializeFromBytes<PackageTypes.Packages.HandCheckAnswer>();
                             Console.WriteLine(handCheck.Timestamp);
                             break;
 
                         case PackageTypes.PackageTypes.PingAnswer:
                             var ping = buffer.DeserializeFromBytes<PackageTypes.Packages.PingAnswer>();
                             var pingHandler = new HandlePingMessage(ping);
-                            var value = pingHandler.Execute();
+                            long pingValue = pingHandler.Execute();
 
                             lock (asyncLock)
                             {
-                                _jobManager.AddAction(() => OnReceivedPing?.Invoke(value));
+                                _jobManager.AddAction(() => OnReceivedPing?.Invoke(pingValue));
                             }
 
                             break;
 
                         case PackageTypes.PackageTypes.ActionAnswer:
-                            var action = buffer.DeserializeFromBytes<PackageTypes.Packages.Action>();
-                            Console.WriteLine(action.Timestamp);
+                            var action = buffer.DeserializeFromBytes<PackageTypes.Packages.ActionAnswer>();
+                            var actionHandler = new HandleActionMessage(action);
+                            long actionValue = actionHandler.Execute();
+
+                            lock (asyncLock)
+                            {
+                                _jobManager.AddAction(() => OnReceivedAction?.Invoke(actionValue));
+                            }
+
                             break;
 
                         default:
@@ -118,6 +119,20 @@ namespace Network
                     }
                 }
             }
+        }
+
+        // Actions
+        public void CalculateLatency()
+        {
+            // To calculate the latency
+            var message = new PingMessage("ping");
+            SendDgram(message, PackageTypes.PackageTypes.PingMessage);
+        }
+
+        public void SendAction()
+        {
+            var message = new ActionMessage(new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds());
+            SendDgram(message, PackageTypes.PackageTypes.ActionMessage);
         }
     }
 }
